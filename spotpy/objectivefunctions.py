@@ -14,6 +14,11 @@ import numpy as np
 import logging
 logging.basicConfig(format='%(levelname)s: %(module)s.%(funcName)s(): %(message)s')
 
+def check_same_length(evaluation, simulation):
+    if len(evaluation) != len(simulation):
+        logging.warning("evaluation and simulation lists does not have the same length.")
+        return False
+
 def bias(evaluation, simulation):
     """
     Bias
@@ -79,6 +84,15 @@ def pbias(evaluation, simulation):
         return np.nan
 
 
+def remove_missing_observations(observed, modelled):
+    # if not check_same_length(observed, modelled):
+    #     logging.error("masking out missing data must be performed on observed and simulated data of same length")
+    if not np.isnan(observed).any():
+        return (observed, modelled)
+    valid_indices = np.where(~np.isnan(observed))
+    return (observed[valid_indices], modelled[valid_indices])
+
+
 def nashsutcliffe(evaluation, simulation):
     """
     Nash-Sutcliffe model efficinecy
@@ -97,20 +111,16 @@ def nashsutcliffe(evaluation, simulation):
     :rtype: float
 
     """
-    if len(evaluation) == len(simulation):
-        s, e = np.array(simulation), np.array(evaluation)
-        # s,e=simulation,evaluation
-        mean_observed = np.mean(e)
-        # compute numerator and denominator
-        numerator = sum((e - s) ** 2)
-        denominator = sum((e - mean_observed)**2)
-        # compute coefficient
-        return 1 - (numerator / denominator)
-
-    else:
-        logging.warning("evaluation and simulation lists does not have the same length.")
+    if not check_same_length(evaluation, simulation):
         return np.nan
-
+    s, e = np.array(simulation), np.array(evaluation)
+    # s,e=simulation,evaluation
+    mean_observed = np.mean(e)
+    # compute numerator and denominator
+    numerator = sum((e - s) ** 2)
+    denominator = sum((e - mean_observed)**2)
+    # compute coefficient
+    return 1 - (numerator / denominator)
 
 def lognashsutcliffe(evaluation, simulation):
     """
