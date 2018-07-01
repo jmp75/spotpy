@@ -158,6 +158,10 @@ class sceua(_algorithm):
         else:
             print(msg)
 
+    def do_injected_log(self):
+        if hasattr(self, 'log_method'):
+            self.log_method(self)
+
     def sample(self, repetitions, ngs=20, kstop=100, pcento=0.0000001, peps=0.0000001):
         """
         Samples from parameter distributions using SCE-UA (Duan, 2004), 
@@ -256,9 +260,11 @@ class sceua(_algorithm):
         # Computes the normalized geometric range of the parameters
         gnrng = np.exp(
             np.mean(np.log((np.max(x, axis=0) - np.min(x, axis=0)) / bound)))
+        self.gnrng = gnrng
 
         # Check for convergency;
         if icall >= repetitions:
+            self.nb_model_runs = icall
             self.progress_update(1.0, '*** OPTIMIZATION SEARCH TERMINATED BECAUSE THE LIMIT')
             self.progress_update(1.0, 'ON THE MAXIMUM NUMBER OF TRIALS ')
             self.progress_update(1.0, repetitions)
@@ -267,6 +273,7 @@ class sceua(_algorithm):
             self.progress_update(1.0, 'OF THE INITIAL LOOP!')
 
         if gnrng < peps:
+            self.nb_model_runs = icall
             self.progress_update(1.0, 
                 'THE POPULATION HAS CONVERGED TO A PRESPECIFIED SMALL PARAMETER SPACE')
 
@@ -285,6 +292,10 @@ class sceua(_algorithm):
         self.progress_update(0.01, 'ComplexEvo started...')
 
         while icall < repetitions and gnrng > peps and criter_change_pcent > pcento:
+            self.gnrng = gnrng
+            self.criter_change_pcent = criter_change_pcent
+            self.nb_model_runs = icall
+            self.do_injected_log()
             nloop += 1
             self.progress_update(icall / repetitions, 'ComplexEvo loop #%d in progress...' % nloop)
             # print nloop
@@ -343,6 +354,7 @@ class sceua(_algorithm):
             gnrng = np.exp(
                 np.mean(np.log((np.max(x, axis=0) - np.min(x, axis=0)) / bound)))
 
+            self.nb_model_runs = icall
             # Check for convergency;
             if icall >= repetitions:
                 self.progress_update(1.0, '*** OPTIMIZATION SEARCH TERMINATED BECAUSE THE LIMIT')
